@@ -13,7 +13,7 @@ In order to follow this tutorial, you'll need a basic understanding of Rails, an
 
 ## Basic Setup
 
-- Create a new Rails application
+- Create a new Rails application.  Make sure you pass the -T flag to rails new to avoid generating the default testing infrastructure.
 - Add the following to your Gemfile and run bundle install:
 ```ruby
 group :test do
@@ -108,7 +108,7 @@ end
 ```
 
 A few things to note about this feature spec:
-- It is written in something that closely resembles English.  In a work situation, you'll likely have a product manager with a vision of what needs to be developed; by sharing this spec with him or her, you can ensure that you have a mutual understanding of what is being built.
+- It is written in something that closely resembles English.  In a work situation, you'll often have a product manager with a vision of what needs to be developed; by sharing this spec with him or her, you can ensure that you have a mutual understanding of what is being built.
 - You could write your steps in any language supported by Ruby, but Simple BDD only supports English for the initial word.  If your code is in Spanish, you'd have to write When "inicie sesión", not Cuando "inicie sesión".
 - Each line describes an action that may take many steps to accomplish in the UI.  It is important to ensure your feature specs do not follow your UI too closely, or you will end up rewriting them with every change to the UI.
 - Your feature specs all live under the spec/features/ directory.  You may add subdirectories to this directory, and you may name the files whatever you wish, as long as they end in _spec.rb
@@ -150,7 +150,7 @@ If you run this spec, you'll get an error:
        undefined local variable or method `new_user_path' for #<RSpec::ExampleGroups::UserManagement:0x007fa2f0b2a7d8>
 ```
 
-This tells us the next step in our development: add some routes!  Add the following to config/routes.rb:
+This tells us the next step in our development: the URL helper is missing, so add a route!  Add the following to config/routes.rb:
 
 ```ruby
 resources :users
@@ -197,12 +197,36 @@ If you run this spec, it will fail for the same reason our feature spec failed: 
 ```ruby
 class UsersController < ApplicationController
   def new
+    @user = User.new
     render :new
   end
 end
 ```
 
 If you run your specs again (which you should do after implementing anything), you'll see a new error:
+
+```
+1) UsersController#new assigns a blank user
+     Failure/Error: get :new
+     NameError:
+       uninitialized constant UsersController::User
+```
+
+We need a User model.  Generate one:
+
+```
+rails g model user username:string password_digest:string
+```
+
+This will generate both the class and the model spec.  Add has_secure_password to the model, so it looks like this:
+
+```ruby
+class User < ActiveRecord::Base
+  has_secure_password
+end
+```
+
+Since there's nothing to test yet, leave the model spec pending.  Migrate and run your specs again, and you'll see that now we can start making the controller tests pass:
 
 ```
 4) User management account registration
@@ -224,9 +248,22 @@ Like before, RSpec is telling you what to do next:  Make a view!  The following 
     <%= f.text_field :password %>
   </p>
   <p>
-    <%= f.submit 'Log in' %>
+    <%= f.label :password_confirmation %>
+    <%= f.text_field :password_confirmation %>
+  </p>
+  <p>
+    <%= f.submit 'Create' %>
   </p>
 <% end %>
 ```
 
-Lo and behold, we have passing tests!  The controller specs should both pass, and 
+Now that the new action on UsersController works, we can go back to the feature spec.  When capybara attempts to fill in the new user form, it encounters the FactoryGirl sequence we specified above.  Not finding it, we get the following error:
+
+```
+1) User management account registration
+     Failure/Error: let(:username) { FactoryGirl.generate(:username) }
+     ArgumentError:
+       Sequence not registered: username
+```
+
+We don't have any factories yet, so we'll need to set one up.
