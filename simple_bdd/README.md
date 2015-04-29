@@ -1,8 +1,8 @@
 # Catchy Title??
 
-In an ideal world, everyone who makes Rails apps would do test-driven development, but many do not do so due to the complexity of setup, the additional time it takes to write tests, and general laziness.  I believe that by providing simple, powerful tools and the guidance in using them, at least the first two factors can be eliminated, and general laziness will become reason TO write tests rather than a reason NOT TO write tests.  We're going to develop a blog application, just like every other Rails tutorial, but we're going to do so using TDD/BDD techniques to ensure our application is well-tested AND covers all of the proposed features.
+In an ideal world, everyone who makes Rails apps would do test-driven development, but many do not do so due to the complexity of setup, the additional time it takes to write tests, and general laziness.  I believe that by providing simple, powerful tools and the guidance in using them, at least the first two factors can be eliminated, and general laziness will become reason TO write tests rather than a reason NOT TO write tests.
 
-What is described here is feature-driven development.  We are going to start by writing a computer-and-human-readable description of the features of our blog, the implement those features step-by-step, unit-testing each component as it is written.  The failing tests tell us what we need to implement next.  When a feature specification and all of its unit tests are passing, you'll know the feature is complete.
+What is described here is feature-driven development, which is a natual extension of test-driven and behavior-driven development.  The idea is to start by writing a computer-and-human-readable description of the features of our app, the implement those features step-by-step, unit-testing each component as it is written.  The failing or pending tests tell us what we need to implement next.  When a feature specification and all of its unit tests are passing, you'll know the feature is complete.
 
 In order to follow this tutorial, you'll need a basic understanding of Rails, and it will help if you've done a bit of testing with RSpec.  The tools used are:
 
@@ -77,7 +77,7 @@ This will add all of the tools described above to your testing stack.
 
 A feature spec defines one feature, which is a subset of the functionality of your application.  Each feature has one or more scenarios; a scenario might describe a single aspect of the feature, or a path through the feature.  Each scenario is composed of one more more steps, which describe the user story for the scenario.  Each step begins with one of the following words: Given, When, Then, And, But and is followed by a string explaining the step in human-understandable language.
 
-Our blog is going to need to have users.  Those users will need to be able to sign up, log in, and log out.  A feature spec for the user management could live in spec/features/user_management_spec.rb and look like this:
+In order to have an authentication system, users will need to be able to sign up, log in, and log out.  A feature spec for the user management could live in spec/features/user_management_spec.rb and look like this:
 
 ```ruby
 require 'rails_helper'
@@ -133,7 +133,7 @@ The last line above contains the method you'll need to implement in order for th
     visit new_user_path
     fill_in 'Username', with: username
     fill_in 'Password', with: password
-    click 'Register'
+    click_button 'Register'
   end
 ```
 
@@ -223,10 +223,11 @@ This will generate both the class and the model spec.  Add has_secure_password t
 ```ruby
 class User < ActiveRecord::Base
   has_secure_password
+  validates :username, uniqueness: true
 end
 ```
 
-Since there's nothing to test yet, leave the model spec pending.  Migrate and run your specs again, and you'll see that now we can start making the controller tests pass:
+Leave the model spec pending; there's nothing to test here that isn't already in ActiveRecord's tests.  Migrate and run your specs again:
 
 ```
 4) User management account registration
@@ -252,7 +253,7 @@ Like before, RSpec is telling you what to do next:  Make a view!  The following 
     <%= f.text_field :password_confirmation %>
   </p>
   <p>
-    <%= f.submit 'Create' %>
+    <%= f.submit 'Register' %>
   </p>
 <% end %>
 ```
@@ -266,4 +267,30 @@ Now that the new action on UsersController works, we can go back to the feature 
        Sequence not registered: username
 ```
 
-We don't have any factories yet, so we'll need to set one up.
+We don't have any factories yet, so we'll need to set one up.  Factories live in spec/factories, and since the one here applies to users, we can create it in spec/factories/user_factory.rb:
+
+```ruby
+FactoryGirl.define do
+  sequence(:username) { |n| "user#{n}" }
+end
+```
+
+This factory will allow your feature spec to create nonrandom unique usernames.  Run the spec, and capybara will get as far as clicking the 'Register' button on your new user form, when it realizes that the button doesn't do anything yet:
+
+```
+1) User management account registration
+     Failure/Error: click_button 'Register'
+     AbstractController::ActionNotFound:
+       The action 'create' could not be found for UsersController
+```
+
+You're probably beginning to notice a pattern.  You can continue in this fashion until you run out of ideas.  The abstracted process is:
+
+1. Write a feature spec
+2. Implement the next pending step
+3. Fix the test failures caused by the step
+4. Repeat (2) and (3) until the feature spec passes
+
+As you're working, don't be afraid to refactor feature specs as you find better ways to implement your features, and definitely clean up any code that is associated with passing tests.  When you've finished, you will have an application that is well-tested, well-documented, and can easily be extended.  This repository contains a blog application that was developed using this technique; it can be used as sample code and a starting point for many different types of Rails applications.  Note that it is completely unstyled; when I develop applications in this fashion, I tend not to even run rails server until I'm done working on features, but if you're more front-end-oriented, you'll probably want to write CSS as you go along.
+
+Happy featuring!
