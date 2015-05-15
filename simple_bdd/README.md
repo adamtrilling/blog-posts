@@ -2,7 +2,7 @@
 
 In an ideal world, everyone who makes Rails apps would do test-driven development, but many do not do so due to the complexity of setup, the additional time it takes to write tests, and general laziness.  I believe that by providing simple, powerful tools and the guidance in using them, at least the first two factors can be eliminated, and general laziness will become reason TO write tests rather than a reason NOT TO write tests.
 
-What is described here is feature-driven development, which is a natual extension of test-driven and behavior-driven development.  The idea is to start by writing a computer-and-human-readable description of the features of our app, the implement those features step-by-step, unit-testing each component as it is written.  The failing or pending tests tell us what we need to implement next.  When a feature specification and all of its unit tests are passing, you'll know the feature is complete.
+What is described here is feature-driven development, which is a natual extension of test-driven and behavior-driven development.  The idea is to start by writing a computer-and-human-readable description of the features of our app, then implement those features step-by-step, unit-testing each component as it is written.  The failing or pending tests tell us what we need to implement next.  When a feature specification and all of its unit tests are passing, you'll know the feature is complete.  Like pretty much every other web application tutorial lately, we're going to build a to-do list.  This is a somewhat trivial example, but once you get into the rhythm of using Simple BDD, you will be able to apply it to more complex projects.
 
 In order to follow this tutorial, you'll need a basic understanding of Rails, and it will help if you've done a bit of testing with RSpec.  The tools used are:
 
@@ -33,14 +33,11 @@ rails g rspec:install
 ```
 - Configure your testing stack by changing your spec/rails_helper.rb file to the following:
 ```ruby
-# This file is copied to spec/ when you run 'rails generate rspec:install'
 ENV['RAILS_ENV'] ||= 'test'
 require 'spec_helper'
 require File.expand_path('../../config/environment', __FILE__)
 require 'rspec/rails'
-# Add additional requires below this line. Rails is not loaded until this point!
 
-require 'capybara/email/rspec'
 require 'simple_bdd/rspec'
 
 Dir[Rails.root.join('spec/support/**/*.rb')].each { |f| require f }
@@ -73,120 +70,127 @@ end
 ```
 This will add all of the tools described above to your testing stack.
 
+Finally, add the following to your config/application.rb to ensure that Rails generators generate the required testing infrastructure:
+
+``` 
+config.generators do |g|
+  g.template_engine :erb
+  g.test_framework  :rspec, :fixture => true, :views => false
+  g.integration_tool :rspec, :fixture => true, :views => true
+  g.fixture_replacement :factory_girl, dir: 'spec/factories'
+end
+```
+
+
 ## Describing Features
 
 A feature spec defines one feature, which is a subset of the functionality of your application.  Each feature has one or more scenarios; a scenario might describe a single aspect of the feature, or a path through the feature.  Each scenario is composed of one more more steps, which describe the user story for the scenario.  Each step begins with one of the following words: Given, When, Then, And, But and is followed by a string explaining the step in human-understandable language.
 
-In order to have an authentication system, users will need to be able to sign up, log in, and log out.  A feature spec for the user management could live in spec/features/user_management_spec.rb and look like this:
+In order to have ato-do list, users will need to be able to view all items, add new items, check off completed items, and delete items.  A feature spec for the user management could live in spec/features/todo_list_spec.rb and look like this:
 
 ```ruby
 require 'rails_helper'
 
-feature "User management" do
-  scenario "account registration" do
-    When "I create an account"
-    Then "I am shown to be logged in"
-  end
-  
-  scenario "logging in" do
-    Given "I have an account"
-    When "I log in with my email and password"
-    Then "I am shown to be logged in"
-  end
-  
-  scenario "logging out" do
-    Given "I have an account"
-    And "I am logged in"
-    When "I log out"
-    Then "I am not shown to be logged in"
+feature 'Todo management' do
+  scenario 'Adding an item to the list' do
+    Given 'I am viewing the list'
+    When 'I add a new item'
+    Then 'I see the item'
+    And 'It is not completed'
   end
 
-  def i_visit_the_login_page
-    visit new_session_path
+  scenario 'Viewing the list' do
+    Given 'There is an item on the list'
+    When 'I view the list'
+    Then 'I see the item'   
   end
+
+  scenario 'Viewing an empty list' do
+    Given 'There are no to-do list entries'
+    When 'I view the list'
+    Then 'I see that there are no entries'
+  end
+
+  scenario 'Completing an item' do
+    Given 'I am viewing the list'
+    And 'It has an item'
+    When 'I complete the item'
+    Then 'It is completed'
+  end
+
+  scenario 'Deleting an item' do
+    Given 'I am viewing the list'
+    And 'It has an item'
+    When 'I delete the item'
+    Then 'I no longer see the item'
+  end
+
 end
 ```
 
 A few things to note about this feature spec:
 - It is written in something that closely resembles English.  In a work situation, you'll often have a product manager with a vision of what needs to be developed; by sharing this spec with him or her, you can ensure that you have a mutual understanding of what is being built.
-- You could write your steps in any language supported by Ruby, but Simple BDD only supports English for the initial word.  If your code is in Spanish, you'd have to write When "inicie sesión", not Cuando "inicie sesión".
-- Each line describes an action that may take many steps to accomplish in the UI.  It is important to ensure your feature specs do not follow your UI too closely, or you will end up rewriting them with every change to the UI.
+- You could write your steps in any language supported by Ruby, but Simple BDD only supports English for the initial word.  If your code is in Spanish, you'd have to write When "estoy viendo la lista", not Cuando "estoy viendo la lista".
+- Each line describes an action that may take many steps to accomplish in the UI.  The idea of feature specs is to describe features, not your UI, and you want to be able to make simple changes to the UI without breaking your feature specs.
 - Your feature specs all live under the spec/features/ directory.  You may add subdirectories to this directory, and you may name the files whatever you wish, as long as they end in _spec.rb
 
-Once this file is in place, run your specs.  Since we've defined scenarios and steps but not implemented the steps, you'll get pending specs like this:
+Once this file is in place, run your specs.  Since we've defined scenarios and steps but not implemented the steps, you'll get four pending specs like this:
 
 ```
-  1) User management account registration
-     # i_create_an_account
-     Failure/Error: When "I create an account"
+  1) Todo management Adding an item to the list
+     # i_am_viewing_the_list
+     Failure/Error: Given 'I am viewing the list'
      SimpleBdd::StepNotImplemented:
-       i_create_an_account
+       i_am_viewing_the_list
 ```
 
-The last line above contains the method you'll need to implement in order for that step to work.  Let's do that, within the feature block but outside the scenario blocks:
+The last line above contains the method you'll need to implement in order for that step to work, i_am_viewing_the_list.  Let's implement that, within the feature block but outside the scenario blocks:
 
 ```
-  let(:username) { FactoryGirl.generate(:username) }
-  let(:password) { 'password1' }
-
-  def i_create_an_account
-    visit new_user_path
-    fill_in 'Username', with: username
-    fill_in 'Password', with: password
-    click_button 'Register'
+  def i_am_viewing_the_list
+    visit items_path
   end
 ```
 
-A couple of things here need explanation:
-- let is the way RSpec defines variables that need to be shared across steps.  It is also possible to use instance variables for this purpose, but let variables can all be defined in one place, so many developers find them easier to keep track of as feature specs grow large.
-- The step function contains several Capybara commands.  visit instructs the virtual browser to go to the specified path.  You can specify the path by relative URL ('/session/new') or using Rails URL helpers, as I've done here.  fill_in causes the virtual browser to put text into a form field specified by label text, name, or css id, and click clicks a button.
+This step function contains a Capybara command.  visit instructs the virtual browser to go to the specified path.  You can specify the path by relative URL ('/session/new') or using Rails URL helpers, as I've done here.  
 
-If you run this spec, you'll get an error:
+If you run this spec, you'll get an error for each step that begins with the 'I am viewing the list' step:
 
 ```
-1) User management account registration
-     Failure/Error: visit new_user_path
+1) Todo management Adding an item to the list
+     Failure/Error: visit items_path
      NameError:
-       undefined local variable or method `new_user_path' for #<RSpec::ExampleGroups::UserManagement:0x007fa2f0b2a7d8>
+       undefined local variable or method `items_path' for #<RSpec::ExampleGroups::TodoManagement:0x007f8e84cd5cc0>
 ```
 
 This tells us the next step in our development: the URL helper is missing, so add a route!  Add the following to config/routes.rb:
 
 ```ruby
-resources :users
+resources :items
 ```
 
-Re-running the spec will give you a new error:
+Re-running the spec will give you a new error for the tests that were failing before:
 
 ```
-1) User management account registration
-     Failure/Error: visit new_user_path
+1) Todo management Adding an item to the list
+     Failure/Error: visit items_path
      ActionController::RoutingError:
-       uninitialized constant UsersController
+       uninitialized constant ItemsController
 ```
 
-It's time to build a controller!  While feature specs are intended to be very high-level, controllers and models are unit-tested, so we want to examine every case we can think of.  Controller specs live under spec/controllers/ and are named by the controller they are testing.  Here's spec/controllers/users_controller_spec.rb, which tests the :new action:
+It's time to build a controller!  While feature specs are intended to be very high-level, controllers and models are unit-tested, so we want to examine every case we can think of.  Controller specs live under spec/controllers/ and are named by the controller they are testing.  Here's spec/controllers/items_controller_spec.rb, which tests the :index action:
 
 ```ruby
 require 'rails_helper'
 
-describe UsersController do
-  describe '#new' do
+describe ItemsController do
+  describe '#index' do
     before do
-      get :new
+      get :index
     end
 
-    it "assigns a blank user" do
-      expect(assigns(:user)).to be_a User
-      expect(assigns(:user)).to_not be_persisted
-    end
-
-    it "is sucessful" do
-      expect(response).to be_success
-    end
-
-    it "renders the new user page" do
-      expect(response).to render_template(:new)
+    it 'renders the index' do
+      expect(response).to render_template(:index)
     end
   end
 end
@@ -195,10 +199,8 @@ end
 If you run this spec, it will fail for the same reason our feature spec failed:  We don't have a UsersController yet.  Let's add one with a new action in app/controllers/users_controller.rb:
 
 ```ruby
-class UsersController < ApplicationController
-  def new
-    @user = User.new
-    render :new
+class ItemsController < ApplicationController
+  def index
   end
 end
 ```
@@ -206,83 +208,163 @@ end
 If you run your specs again (which you should do after implementing anything), you'll see a new error:
 
 ```
-1) UsersController#new assigns a blank user
-     Failure/Error: get :new
-     NameError:
-       uninitialized constant UsersController::User
-```
-
-We need a User model.  Generate one:
-
-```
-rails g model user username:string password_digest:string
-```
-
-This will generate both the class and the model spec.  Add has_secure_password to the model, so it looks like this:
-
-```ruby
-class User < ActiveRecord::Base
-  has_secure_password
-  validates :username, uniqueness: true
-end
-```
-
-Leave the model spec pending; there's nothing to test here that isn't already in ActiveRecord's tests.  Migrate and run your specs again:
-
-```
-4) User management account registration
-     Failure/Error: visit new_user_path
+1) ItemsController#index renders the index
+     Failure/Error: get :index
      ActionView::MissingTemplate:
-       Missing template users/new, application/new with {:locale=>[:en], :formats=>[:html], :variants=>[], :handlers=>[:erb, :builder, :raw, :ruby]}. Searched in:
+       Missing template items/index, application/index with {:locale=>[:en], :formats=>[:html], :variants=>[], :handlers=>[:erb, :builder, :raw, :ruby, :jbuilder]}.
 ```
 
-Like before, RSpec is telling you what to do next:  Make a view!  The following goes in app/views/users/new.html.erb, and should look familiar to anyone who has done a Rails tutorial:
+Like before, RSpec is telling you what to do next:  Make a view!  The following goes in app/views/items/index.html.erb, and should look familiar to anyone who has done a Rails tutorial:
 
 ```erb
-<%= form_for @user do |f| %>
-  <p>
-    <%= f.label :username %>
-    <%= f.text_field :username %>
-  </p>
-  <p>
-    <%= f.label :password %>
-    <%= f.text_field :password %>
-  </p>
-  <p>
-    <%= f.label :password_confirmation %>
-    <%= f.text_field :password_confirmation %>
-  </p>
-  <p>
-    <%= f.submit 'Register' %>
-  </p>
-<% end %>
+<div id="item-list">
+  <% @items.each do |item| %>
+    <%= item.text %>
+  <% end %>
+</div>
 ```
 
-Now that the new action on UsersController works, we can go back to the feature spec.  When capybara attempts to fill in the new user form, it encounters the FactoryGirl sequence we specified above.  Not finding it, we get the following error:
+This fails because we haven't defined @items:
 
 ```
-1) User management account registration
-     Failure/Error: let(:username) { FactoryGirl.generate(:username) }
-     ArgumentError:
-       Sequence not registered: username
+1) Todo management Adding an item to the list
+     Failure/Error: visit items_path
+     ActionView::Template::Error:
+       undefined method `each' for nil:NilClass
 ```
 
-We don't have any factories yet, so we'll need to set one up.  Factories live in spec/factories, and since the one here applies to users, we can create it in spec/factories/user_factory.rb:
+So let's add that to the index action in ItemsController:
 
 ```ruby
-FactoryGirl.define do
-  sequence(:username) { |n| "user#{n}" }
+class ItemsController < ApplicationController
+  def index
+    @items = Item.all
+  end
 end
 ```
 
-This factory will allow your feature spec to create nonrandom unique usernames.  Run the spec, and capybara will get as far as clicking the 'Register' button on your new user form, when it realizes that the button doesn't do anything yet:
+That fails because we don't have an Item model:
 
 ```
-1) User management account registration
-     Failure/Error: click_button 'Register'
-     AbstractController::ActionNotFound:
-       The action 'create' could not be found for UsersController
+1) ItemsController#index renders the index
+     Failure/Error: get :index
+     NameError:
+       uninitialized constant ItemsController::Item
 ```
+
+So let's make one using the Rails generators:
+
+```
+rails g model item text:string completed:boolean
+```
+
+This will generate a model spec; we can leave that pending now, as the Item model has no functionality.  Run your migrations and run rspec again.  Our first step in the feature specs now completes sucessfully, so we're back to pending!
+
+```
+1) Todo management Adding an item to the list
+     # i_add_a_new_item
+     Failure/Error: When 'I add a new item'
+     SimpleBdd::StepNotImplemented:
+       i_add_a_new_item
+```
+
+We need to implement the step where a new item is added.  Describe how to do it by adding the following to spec/features/todo_list_spec.rb:
+
+```ruby
+  let(:item_text) { Faker::Lorem.sentence }
+
+  def i_add_a_new_item
+    within('#new-item') do
+      fill_in :text, with: item_text
+      click_button 'Submit'
+    end
+  end
+```
+
+This step has a couple of Capybara commands that deserve some explaination:
+- within takes CSS selector that lets your narrow down on the page where you want to perform an action or check for content.  While at present the page doesn't contain much, it is good practice to narrow your searches down as much as possible.
+- fill_in and click_button do what's described on the tin; fill_in fills a text box with the given text, and click_button hits the submit button (or whichever button you specify).
+
+Also, we're going to use a let for the actual item, because we need to check later that the item appears on the page.  Lets are only evaluated once per feature.
+
+This step will fail because we haven't added a CSS id #new-item yet:
+
+```
+1) Todo management Adding an item to the list
+     Failure/Error: within('#new-item') do
+     Capybara::ElementNotFound:
+       Unable to find css "#new-item"
+```
+
+Let's go ahead and write the markup for the new item form, adding the following to the bottom of app/views/items/index.html.haml:
+
+```erb
+<div id="new-item" %>
+  <%= form_for :item do |f| %>
+    <%= f.label :text %>:
+    <%= f.text_field :text %>
+    <%= f.submit %>
+  <% end %>
+</div>
+```
+
+This gives us a new error, once again indicating the next step in our development:
+
+```
+1) Todo management Adding an item to the list
+     Failure/Error: click_button 'Save'
+     AbstractController::ActionNotFound:
+       The action 'create' could not be found for ItemsController
+```
+
+Let's write a spec for the create action before we write it, in spec/controllers/items_controller_spec.rb:
+
+```ruby
+  describe '#create' do
+    before do
+      allow(Item).to receive(:create)
+      post :create, { item: { text: Faker::Lorem.sentence } }
+    end
+
+    it 'creates an item' do
+      expect(Item).to have_received(:create)
+    end
+
+    it 'redirects back to the index' do
+      expect(response).to redirect_to items_path
+    end
+  end
+```
+
+Then we can write the action.  Since it's pretty simple, we'll do the whole thing in one shot, in app/controllers/items_controller.rb:
+
+```ruby
+  def create
+    Item.create(item_params)
+    redirect_to items_path
+  end
+```
+
+If we run rspec again, we'll see that the feature step we were working on passes, and we can continue to the next one:
+
+```
+  1) Todo management Adding an item to the list
+     # i_see_the_item
+     Failure/Error: Then 'I see the item'
+     SimpleBdd::StepNotImplemented:
+       i_see_the_item
+```
+
+Now, we can check that the item exists:
+
+```ruby
+  def i_see_the_item
+    within('#item-list') do
+      expect(page).to have_content item_text
+    end
+  end
+```
+
 
 You're probably beginning to notice a pattern.  You can continue in this fashion until you run out of ideas.  The abstracted process is:
 
