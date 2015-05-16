@@ -6,10 +6,10 @@ What is described here is feature-driven development, which is a natual extensio
 
 In order to follow this tutorial, you'll need a basic understanding of Rails, and it will help if you've done a bit of testing with RSpec.  The tools used are:
 
-- RSpec, a very widely-used testing framework for Ruby.  http://rspec.info/
+- RSpec, a very widely-used testing framework for Ruby.  (http://rspec.info/)
 - Simple BDD, a small frameowrk that greatly simplifies writing feature specs, which are the linchpin of BDD.
-- Capybara, a web driver that lets your feature specs act as if they were in a browser.
-- FactoryGirl, a replacement for fixtures that makes it easy to create dynamic data for your tests
+- Capybara, a web driver that lets your feature specs act as if they were in a browser. (http://jnicklas.github.io/capybara/)
+- FactoryGirl, a replacement for fixtures that makes it easy to create dynamic data for your tests (https://github.com/thoughtbot/factory_girl)
 
 ## Basic Setup
 
@@ -17,7 +17,6 @@ In order to follow this tutorial, you'll need a basic understanding of Rails, an
 - Add the following to your Gemfile and run bundle install:
 ```ruby
 group :test do
-  gem 'capybara-webkit'
   gem 'database_cleaner'
   gem 'factory_girl_rails'
   gem 'faker'
@@ -115,16 +114,8 @@ feature 'Todo management' do
     Given 'I am viewing the list'
     And 'It has an item'
     When 'I complete the item'
-    Then 'It is completed'
+    Then 'The item is completed'
   end
-
-  scenario 'Deleting an item' do
-    Given 'I am viewing the list'
-    And 'It has an item'
-    When 'I delete the item'
-    Then 'I no longer see the item'
-  end
-
 end
 ```
 
@@ -544,26 +535,7 @@ Let's add one in the view:
 </div>
 ```
 
-Only one feature spec left to go!  This one is pending because it duplicates another step with different wording:
-
-```
-1) Todo management Completing an item
-     # it_has_an_item
-     Failure/Error: And 'It has an item'
-     SimpleBdd::StepNotImplemented:
-       it_has_an_item
-```
-
-Add an alias to there_is_an_item_on_the_list:
-
-```ruby
-  def there_is_an_item_on_the_list
-    item
-  end
-  alias_method :it_has_an_item, :there_is_an_item_on_the_list
-```
-
-Now, we need to implement the step about completing the item:
+Only one feature spec left to go!  
 
 ```
 1) Todo management Completing an item
@@ -573,13 +545,103 @@ Now, we need to implement the step about completing the item:
        i_complete_the_item
 ```
 
-You're probably beginning to notice a pattern.  You can continue in this fashion until you run out of ideas.  The abstracted process is:
+We need a step to complete the item.  For now, let's just make it a link to click:
+
+```erb
+ <div id="item-<%= item.id %>" %>
+    <%= item.text %> <%= completed?(item) %>
+    <%= link_to "Mark Completed", mark_completed_item_path(item) %>
+</div>
+
+```
+
+You probably know why this is going to fail:  We haven't defined the approprite route.  Let's do that:
+
+```ruby
+  resources :items do
+    get :mark_completed, on: :member
+  end
+```
+
+And again, you know why the spec is going to fail: No action for mark_completed.  Let's write a spec for that in spec/controllers/items_controller_spec.rb:
+
+```ruby
+  describe '#mark_completed' do
+    let(:item) { double(:item) }
+    let(:item_id) { rand(1000) }
+
+    before do
+      allow(Item).to receive(:find).with(item_id.to_s) { item }
+      allow(item).to receive(:update_attributes) { true }
+      get :mark_completed, id: item_id
+    end
+
+    it 'marks the item completed' do
+      expect(item).to have_received(:update_attributes).with(completed: true)
+    end
+
+    it 'redirects back to the index' do
+      expect(response).to redirect_to items_path
+    end
+  end
+```
+
+You'll notice that this spec creates test doubles and stubs all of the action on the item model.  The idea behind this is that your controller spec should only test what is happening in the controller.  In your controller, stub what you expect the Item model to do, and in the spec on the Item model, you can make sure that what you stubbed in the controller is what is actually happening.
+
+You may be wondering, if that's true, why haven't we written any model specs on Item yet??  The answer is that there's no reason to; everything we're doing in Item is straight out of ActiveRecord, which is very well-tested.  If, at a later point, we decide to add something to the Item model, like validations or callbacks, those will need to be tested.
+
+Let's write an action in app/controllers/items_controller.rb to make the controller spec pass:
+
+```ruby
+  def mark_completed
+    @item = Item.find(params[:id])
+    @item.update_attributes(completed: true)
+    redirect_to items_path
+  end
+```
+
+Finally, we have one last feature step to make pass:
+
+```
+1) Todo management Completing an item
+     # it_is_completed
+     Failure/Error: Then 'The item is completed'
+     SimpleBdd::StepNotImplemented:
+       the_item_is_completed
+```
+
+All we need to do is add the step:
+
+```ruby
+  def the_item_is_completed
+    within("#item-#{item.id}") do
+      expect(page).to have_text 'Completed'
+      expect(page).to_not have_link 'Mark Completed'
+    end
+  end
+```
+
+And make the view match the step:
+
+```erb
+<div id="item-<%= item.id %>" %>
+  <%= item.text %> <%= completed?(item) %>
+  <% unless item.completed %>
+    <%= link_to "Mark Completed", mark_completed_item_path(item) %>
+  <% end %>
+</div>
+```
+
+With that, you've completed your feature.  The only remaining pending spec is the model; if you are done with the model, you can go ahead and remove the pending from that model and have a passing set of specs.  But you're probably not done.  You might want to be able to uncomplete completed items.  You might want to delete items from the list.  You might want to have a user authentication system and allow each user to have a separate list.  You can build anything you'd normally build into a web application using this style. The abstracted process is:
 
 1. Write a feature spec
 2. Implement the next pending step
-3. Fix the test failures caused by the step
+3. Fix the test failures caused by the step using models, controllers and views
 4. Repeat (2) and (3) until the feature spec passes
 
-As you're working, don't be afraid to refactor feature specs as you find better ways to implement your features, or to clean up any code that is associated with passing tests.  When you've finished, you will have an application that is well-tested, well-documented, and can easily be extended.  This repository contains a blog application that was developed using this technique; it can be used as sample code and a starting point for many different types of Rails applications.  Note that it is completely unstyled; when I develop applications in this fashion, I tend not to even run rails server until I'm done working on features, but if you're more front-end-oriented, you'll probably want to write CSS as you go along.
+The idea is to let RSpec tell you what to do next.  As you're working, don't be afraid to refactor feature specs as you find better ways to implement your features, or to clean up any code that is associated with passing tests.  When you've finished, you will have an application that is well-tested, well-documented, and can easily be extended. 
+Note that the application is completely unstyled; I haven't even told you to look at it in a web browser.  When you do so, you'll probably be horrified at what it looks like, but it works exactly like you expect it to!  Since you have good test coverage, you can start rearranging things on the page, adding CSS, and tweaking things without worrying too much about breaking things; if your specs start to fail, you can adapt your code and your tests to match the new desired behavior.
+
+Almost all of the tools here are widely used and have excellent documentation, linked to at the top of this post.  If you need to unit-test something, chances are there's a clean way to do it in RSpec, and if there isn't, you might need to adjust your approach to the problem you're solving.  And if you can perform an action in a web browser, you can perform the same action in capybara; it can even use JavaScript by firing up an actual instance of FireFox on your computer.  This can be slow, but it's a great way to be sure everything works the way you want it to.
 
 Happy featuring!
