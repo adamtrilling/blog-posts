@@ -1,0 +1,22 @@
+<div id="item-list">
+  <% if @items.size > 0 %>
+    <% @items.each do |item| %>
+      <div id="item-<%= item.id %>" %>
+        <%= item.text %> <%= completed?(item) %>
+        <% unless item.completed %>
+          <%= link_to "Mark Completed", mark_completed_item_path(item) %>
+        <% end %>
+      </div>
+     <% end %>
+   <% else %>
+     No items in list
+   <% end %>
+</div>
+
+<div id="new-item" %>
+  <%= form_for :item do |f| %>
+    <%= f.label :text %>:
+    <%= f.text_field :text %>
+    <%= f.submit %>
+  <% end %>
+</div>
