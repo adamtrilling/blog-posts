@@ -13,10 +13,11 @@ In order to follow this tutorial, you'll need a basic understanding of Rails, an
 
 ## Basic Setup
 
-- Create a new Rails application.  Make sure you pass the -T flag to rails new to avoid generating the default testing infrastructure.
+- Create a new Rails application.  Make sure you pass the -T flag to rails new to avoid generating the default testing infrastructure.  The current version of Rails at the time of this writing is 4.2.1
 - Add the following to your Gemfile and run bundle install:
 ```ruby
 group :test do
+  gem 'capybara'
   gem 'database_cleaner'
   gem 'factory_girl_rails'
   gem 'faker'
@@ -37,6 +38,7 @@ require 'spec_helper'
 require File.expand_path('../../config/environment', __FILE__)
 require 'rspec/rails'
 
+require 'capybara/rspec'
 require 'simple_bdd/rspec'
 
 Dir[Rails.root.join('spec/support/**/*.rb')].each { |f| require f }
@@ -111,8 +113,8 @@ feature 'Todo management' do
   end
 
   scenario 'Completing an item' do
-    Given 'I am viewing the list'
-    And 'It has an item'
+    Given 'There is an item on the list'
+    When 'I view the list'
     When 'I complete the item'
     Then 'The item is completed'
   end
@@ -211,7 +213,7 @@ Like before, RSpec is telling you what to do next:  Make a view!  The following 
 <div id="item-list">
   <% @items.each do |item| %>
     <div id="item-<%= item.id %>" %>
-      <%= item.text %> <%= completed?(item) %>
+      <%= item.text %> <%= item.completed ? "Completed" : "Not Completed" %>
     </div>
   <% end %>
 </div>
@@ -268,8 +270,8 @@ We need to implement the step where a new item is added.  Describe how to do it 
 
   def i_add_a_new_item
     within('#new-item') do
-      fill_in :text, with: item_text
-      click_button 'Submit'
+      fill_in 'Text', with: item_text
+      click_button 'Save'
     end
   end
 ```
@@ -289,7 +291,7 @@ This step will fail because we haven't added a CSS id #new-item yet:
        Unable to find css "#new-item"
 ```
 
-Let's go ahead and write the markup for the new item form, adding the following to the bottom of app/views/items/index.html.haml:
+Let's go ahead and write the markup for the new item form, adding the following to the bottom of app/views/items/index.html.erb:
 
 ```erb
 <div id="new-item" %>
@@ -335,6 +337,12 @@ Then we can write the action.  Since it's pretty simple, we'll do the whole thin
   def create
     Item.create(item_params)
     redirect_to items_path
+  end
+  
+  private
+
+  def item_params
+    params.require(:item).permit(:text)
   end
 ```
 
@@ -450,7 +458,7 @@ So, let's add a method alias:
   def i_am_viewing_the_list
     visit items_path
   end
-  alias_method :i_am_viewing_the_list, :i_view_the_list
+  alias_method :i_view_the_list, :i_am_viewing_the_list
 ```
 
 And we get another pending step:
@@ -545,14 +553,23 @@ Only one feature spec left to go!
        i_complete_the_item
 ```
 
-We need a step to complete the item.  For now, let's just make it a link to click:
+We need a step to complete the item.  For now, let's just make it a link to click.  In spec/features/todo_list_spec.rb:
+
+```ruby
+  def i_complete_the_item
+    within("#item-#{item.id}") do
+      click_link 'Mark Completed'
+    end
+  end
+```
+
+And in app/views/items/index.html.erb:
 
 ```erb
  <div id="item-<%= item.id %>" %>
     <%= item.text %> <%= completed?(item) %>
     <%= link_to "Mark Completed", mark_completed_item_path(item) %>
-</div>
-
+  </div>
 ```
 
 You probably know why this is going to fail:  We haven't defined the approprite route.  Let's do that:
