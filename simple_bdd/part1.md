@@ -17,12 +17,63 @@ In an ideal world, everyone who makes Rails apps would do test-driven developmen
 
 The beauty of this process is twofold.  First, it avoids the coders block that many developers face when starting on a large feature.  Instead of having to worry about all of the implementation details of your feature before you write any code, you can write the feature steps and worry about the details as you get to them.  Second, as you're working on your feature, RSpec is always telling you what you need to do next
 
-## Why Simple BDD instead of Cucumber?
-Cucumber is the tool most people think of when mentioning Behavior-Driven Development. Cucumber is an excellent tool for this, and BDD using Cucumber follows the same process as BDD using SimpleBDD.  There are three main differences between SimpleBDD and Cucumber:
-- In Cucumber, step definitions are matched to steps using regular expressions. In SimpleBDD, step defintions are translated into method names.
-- In Cucumber, step definitions are global.  In SimpleBDD, features and scenarios are contained within their own class context.
-- Cucumber is separate from RSpec, and your features and step definitions live outside the spec/ directory in your application.  SimpleBDD lives alongside RSpec, putting its files in spec/features, and the feature tests are run by default when you run RSpec.
+## Anatomy Of A Feature Spec
+A feature spec defines one feature, which is a subset of the functionality of your application. Each feature has one or more scenarios; a scenario might describe a single aspect of the feature, or a path through the feature. Each scenario is composed of one more more steps, which describe the user story for the scenario. Each step begins with one of the following words: Given, When, Then, And, But and is followed by a string explaining the step in human-understandable language.  The string part of the step is converted into a method name, and that method definition will describe how the step should proceed.
 
-The upshot of the design differences is that SimpleBDD encourages you to isolate each feature its step definitions, whereas Cucumber encourages you to share.  In small projects, Cucumber tends to be simpler, but in larger projects, step definitions tend to be spread across many files, making it difficult to figure out what you have already defined.  While both Cucumber and SimpleBDD use instance variables to share context across step definitions, large Cucumber projects tend to cause confusion about which instance variables are defined and what they mean unless you are quite careful about organizing your steps.  Since SimpleBDD makes you take specific measures to share steps across features, it's easier to keep track of these shared steps and what they define.  The close integration between SimpleBDD and RSpec is a matter of convenience.
+What follows is a part-by-part description of part of the feature spec the sample code (spec/features/todo_list_spec.rb).  In the next part of this series, we will examine the entire spec and use it to build out the feature.
 
-Stay tuned for Part 2, which will lead you through the process of setting up SimpleBDD and developing a feature with it.
+```ruby
+require 'rails_helper'
+```
+
+SimpleBDD feature specs are implemented using RSpec's feature spec functionality, so we include rails_helper like any other spec file.
+
+```ruby
+feature 'Todo management' do
+  scenario 'Adding an item to the list' do
+    Given 'I am viewing the list'
+    When 'I add a new item'
+    Then 'I see the new item'
+    And 'It is not completed'
+  end
+```
+
+A feature is composed of one or more scenarios, and each scenario is composed of one or more steps.  The scenarios read sort of like plain English.
+
+```ruby
+  def i_am_viewing_the_list
+    visit items_path
+  end
+  alias_method :i_view_the_list, :i_am_viewing_the_list
+```
+Each step matches to one method definition.  The method body contains a Capybara function to tell Capybara's virtual browser to type the items_path into the URL bar.  You can use all of your Rails path helpers, or a URL relative to the root path.  If you wish to have a step that does the same thing with slightly different wording, you can use alias_method to duplicate the step.
+
+```ruby
+  let(:item_text) { Faker::Lorem.sentence }
+```
+
+You can use let just like in other RSpec specs.  Every scenario is run within its own class context, so you can use instance variables to share data between steps, but let definitions are easier to keep track of when dealing with shared step definitions.
+
+```ruby
+  def i_add_a_new_item
+    within('#new-item') do
+      fill_in 'Text', with: item_text
+      click_button 'Save'
+    end
+  end
+```
+
+Capybara can fill out forms for you, as well as submit them.  You can specify form elements by label or HTML id, and you can narrow down where on the page the browser looks for the form elements using within.  Filling out and submitting a form this way tests your controllers and views in one succinct process.
+
+```ruby
+  def i_see_the_new_item
+    within('#item-list') do
+      expect(page).to have_content item_text
+    end
+  end
+end
+```
+
+Finally, you can use Capybara's matchers to make assertions about the page content at any point in your scenario.  With these tools, you can automatically test every path through your application, saving many hours of work that you (or your QA team) would have spent clicking and clicking and clicking.
+
+Stay tuned for Part 2, which will lead you through the full process of setting up SimpleBDD and developing a feature with it.
