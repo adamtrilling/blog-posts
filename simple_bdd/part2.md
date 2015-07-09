@@ -1,4 +1,4 @@
-# Catchy Title??
+# Feature-Driven Development, Step By Step
 
 Having seen an introduction to feature-driven development using RSpec and SimpleBDD, let's use it to constrct a web app, step-by-step.  This isn't going to be a complicated app, but it will illustrate the process.
 
