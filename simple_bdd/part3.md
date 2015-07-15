@@ -8,7 +8,7 @@ Cucumber is the tool most people think of when mentioning Behavior-Driven Develo
 - In Cucumber, step definitions are global.  In SimpleBDD, step definitions are called within the class context of the scenario that calls them.
 - Cucumber is separate from RSpec, and your features and step definitions live outside the spec/ directory in your application.  SimpleBDD lives alongside RSpec, putting its files in spec/features, and the feature tests are run by default when you run RSpec.
 
-The upshot of the design differences is that SimpleBDD encourages you to isolate each feature its step definitions, whereas Cucumber encourages you to share.  In small projects, Cucumber can be simpler, but in larger projects, step definitions tend to be spread across many files, making it difficult to figure out what you have already defined.  While both Cucumber and SimpleBDD use instance variables to share context across step definitions, large Cucumber projects tend to cause confusion about which instance variables are defined and what they mean unless you are quite careful about organizing your steps.  Since SimpleBDD makes you take specific measures to share steps across features, it's easier to keep track of these shared steps and what they define.
+The upshot of the design differences is that SimpleBDD encourages you to isolate each feature its step definitions, whereas Cucumber encourages you to share.  In small projects, Cucumber can be simpler, but in larger projects, step definitions tend to be spread across many files, making it difficult to figure out what you have already defined.  While both Cucumber and SimpleBDD can use instance variables to share context across step definitions, SimpleBDD can also use `let`-defined variables.  Large Cucumber projects tend to cause confusion about which instance variables are defined and what they mean.  Since SimpleBDD runs scenarios in their own class context and makes you take specific measures to share steps across features, it's easier to keep track of these shared steps and what variables they define.  
 
 ## Sharing step definitions
 
@@ -73,11 +73,10 @@ This step definition will let you use steps like 'Given I am logged in as an adm
 ```ruby
 ['a_user', 'an_admin'].each do |role|
   define_method :"i_am_logged_in_as_#{role}" do
-    @current_user = FactoryGirl.create(:user, role: role)
     visit new_session_path
 
-    fill_in 'Username', with: @current_user.username
-    fill_in 'Password', with: @current_user.password
+    fill_in 'Username', with: current_user.username
+    fill_in 'Password', with: current_user.password
 
     click_button 'Log in'
   end
@@ -150,11 +149,10 @@ When the 'I save and open page' step is reached, the page will open in your brow
 
 ```ruby
   define_method :"i_am_logged_in_as_a_user" do
-    @current_user = FactoryGirl.create(:user)
     visit new_session_path
 
-    fill_in 'Username', with: @current_user.username
-    fill_in 'Password', with: @current_user.password
+    fill_in 'Username', with: current_user.username
+    fill_in 'Password', with: current_user.password
     save_and_open_page
     click_button 'Log in'
   end
