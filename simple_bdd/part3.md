@@ -4,7 +4,7 @@ In this final post, we will explore the differences between SimpleBDD and its pr
 
 ## Why SimpleBDD instead of Cucumber?
 Cucumber is the tool most people think of when mentioning Behavior-Driven Development, with good reason, and BDD using Cucumber follows the same process as BDD using SimpleBDD.  There are three main differences between SimpleBDD and Cucumber:
-- In Cucumber, step definitions are matched to steps using regular expressions. In SimpleBDD, step defintions are translated into method names.
+- In Cucumber, step definitions are matched to steps using regular expressions. In SimpleBDD, step definitions are translated into method names.
 - In Cucumber, step definitions are global.  In SimpleBDD, step definitions are called within the class context of the scenario that calls them.
 - Cucumber is separate from RSpec, and your features and step definitions live outside the spec/ directory in your application.  SimpleBDD lives alongside RSpec, putting its files in spec/features, and the feature tests are run by default when you run RSpec.
 
@@ -149,7 +149,7 @@ end
 When the 'I save and open page' step is reached, the page will open in your browser.  You can also use these commands in the middle of a step definition, like:
 
 ```ruby
-  def :"i_am_logged_in_as_a_user" do
+  define_method :"i_am_logged_in_as_a_user" do
     @current_user = FactoryGirl.create(:user)
     visit new_session_path
 
