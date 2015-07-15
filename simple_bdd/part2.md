@@ -4,7 +4,7 @@ Having seen an introduction to feature-driven development using RSpec and Simple
 
 ## Basic Setup
 
-- Create a new Rails application.  Make sure you pass the -T flag to rails new to avoid generating the default testing infrastructure.  The current version of Rails at the time of this writing is 4.2.1
+- Create a new Rails application.  Make sure you pass the -T flag to rails new to avoid generating the default testing infrastructure.  The current version of Rails at the time of this writing is 4.2.3
 - Add the following to your Gemfile and run bundle install:
 ```ruby
 group :test do
@@ -110,7 +110,7 @@ feature 'Todo management' do
 end
 ```
 
-A couple ofthings to note about this feature spec:
+A couple of things to note about this feature spec:
 - Each line describes an action that may take many steps to accomplish in the UI.  The idea of feature specs is to describe features, not your UI, and you want to be able to make simple changes to the UI without breaking your feature specs.
 - Your feature specs all live under the spec/features/ directory.  You may add subdirectories to this directory, and you may name the files whatever you wish, as long as they end in _spec.rb
 
@@ -399,7 +399,7 @@ module ItemsHelper
 end
 ```
 
-You have your first passing feature spec!  The next pending spec is a little different than the previous oneas, as it only requires that we set up the criteria for the test:
+You have your first passing feature spec!  The next pending spec is a little different than the previous one, as it only requires that we set up the criteria for the test:
 
 ```
 1) Todo management Viewing the list
