@@ -52,7 +52,7 @@ Each step matches to one method definition.  The method body contains a Capybara
   let(:item_text) { Faker::Lorem.sentence }
 ```
 
-You can use let just like in other RSpec specs.  Every scenario is run within its own class context, so you can use instance variables to share data between steps, but let definitions are easier to keep track of when dealing with shared step definitions.
+You can use `let` just like in other RSpec specs.  Every scenario is run within its own class context, so you can use instance variables to share data between steps, but `let` definitions are easier to keep track of when dealing with shared step definitions.
 
 ```ruby
   def i_add_a_new_item
