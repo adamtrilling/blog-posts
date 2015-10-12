@@ -1,6 +1,6 @@
 # Feature-Driven Development, Step By Step
 
-Having seen an introduction to feature-driven development using RSpec and SimpleBDD, let's use it to constrct a web app, step-by-step.  This isn't going to be a complicated app, but it will illustrate the process.
+Having seen an introduction to feature-driven development using RSpec and SimpleBDD ([part 1](https://github.com/adamtrilling/blog-posts/blob/master/simple_bdd/part1.md) of this series), let's use it to construct a to-do list web app, step-by-step.  This isn't going to be a complicated app, but it will illustrate the process.
 
 ## Basic Setup
 
@@ -60,6 +60,7 @@ RSpec.configure do |config|
   end
 end
 ```
+
 This will add all of the tools described above to your testing stack.
 
 Finally, add the following to your config/application.rb to ensure that Rails generators generate the required testing infrastructure:
@@ -76,7 +77,7 @@ end
 
 ## Describing Features
 
-In order to have ato-do list, users will need to be able to view all items, add new items, check off completed items, and delete items.  A feature spec for the user management could live in spec/features/todo_list_spec.rb and look like this:
+In order to have a to-do list, users will need to be able to view all items, add new items, check off completed items, and delete items.  A feature spec for the user management could live in spec/features/todo_list_spec.rb and look like this:
 
 ```ruby
 require 'rails_helper'
@@ -114,7 +115,7 @@ A couple of things to note about this feature spec:
 - Each line describes an action that may take many steps to accomplish in the UI.  The idea of feature specs is to describe features, not your UI, and you want to be able to make simple changes to the UI without breaking your feature specs.
 - Your feature specs all live under the spec/features/ directory.  You may add subdirectories to this directory, and you may name the files whatever you wish, as long as they end in _spec.rb
 
-Once this file is in place, run your specs.  Since we've defined scenarios and steps but not implemented the steps, you'll get four pending specs like this:
+Once this file is in place, run your specs.  Since we've defined scenarios and steps, but not implemented the steps, you'll get four pending specs like this:
 
 ```
   1) Todo management Adding an item to the list
@@ -124,7 +125,7 @@ Once this file is in place, run your specs.  Since we've defined scenarios and s
        i_am_viewing_the_list
 ```
 
-The last line above contains the method you'll need to implement in order for that step to work, i_am_viewing_the_list.  Let's implement that, within the feature block but outside the scenario blocks:
+The last line above contains the method you'll need to implement in order for that step to work, i_am_viewing_the_list.  Let's implement that, within the feature block, but outside the scenario blocks:
 
 ```
   def i_am_viewing_the_list
@@ -132,7 +133,7 @@ The last line above contains the method you'll need to implement in order for th
   end
 ```
 
-This step function contains a Capybara command.  visit instructs the virtual browser to go to the specified path.  You can specify the path by relative URL ('/session/new') or using Rails URL helpers, as I've done here.  
+This step function contains a Capybara command.  `visit` instructs the virtual browser to go to the specified path.  You can specify the path by relative URL ('/session/new') or using Rails URL helpers, as I've done here.  
 
 If you run this spec, you'll get an error for each step that begins with the 'I am viewing the list' step:
 
@@ -158,7 +159,7 @@ Re-running the spec will give you a new error for the tests that were failing be
        uninitialized constant ItemsController
 ```
 
-It's time to build a controller!  While feature specs are intended to be very high-level, controllers and models are unit-tested, so we want to examine every case we can think of.  Controller specs live under spec/controllers/ and are named by the controller they are testing.  Here's spec/controllers/items_controller_spec.rb, which tests the :index action:
+Now it's time to build a controller.  While feature specs are intended to be very high-level, controllers and models are unit-tested, so we want to examine every case we can think of.  Controller specs live under spec/controllers/ and are named by the controller they are testing.  Here's spec/controllers/items_controller_spec.rb, which tests the :index action:
 
 ```ruby
 require 'rails_helper'
@@ -240,7 +241,7 @@ So let's make one using the Rails generators:
 rails g model item text:string completed:boolean
 ```
 
-This will generate a model spec; we can leave that pending now, as the Item model has no functionality.  Run your migrations and run rspec again.  Our first step in the feature specs now completes sucessfully, so we're back to pending!
+This will generate a model spec.  We can leave that pending now, as the Item model has no functionality.  Run your migrations and run rspec again.  Our first step in the feature specs now completes successfully, so we're back to pending!
 
 ```
 1) Todo management Adding an item to the list
@@ -263,11 +264,11 @@ We need to implement the step where a new item is added.  Describe how to do it 
   end
 ```
 
-This step has a couple of Capybara commands that deserve some explaination:
-- within takes CSS selector that lets your narrow down on the page where you want to perform an action or check for content.  While at present the page doesn't contain much, it is good practice to narrow your searches down as much as possible.
-- fill_in and click_button do what's described on the tin; fill_in fills a text box with the given text, and click_button hits the submit button (or whichever button you specify).
+This step has a couple of Capybara commands that deserve some explanation:
+- `within` takes a CSS selector that lets you narrow down on the page where you want to perform an action or check for content.  While at present the page doesn't contain much, it is good practice to narrow your searches down as much as possible.
+- `fill_in` and `click_button` do what's described on the tin; `fill_in` fills a text box with the given text, and `click_button` hits the submit button (or whichever button you specify).
 
-Also, we're going to use a let for the actual item, because we need to check later that the item appears on the page.  Lets are only evaluated once per feature.
+Also, we're going to use a `let` for the actual item because we need to check later that the item appears on the page.  `let`s are only evaluated once per feature.
 
 This step will fail because we haven't added a CSS id #new-item yet:
 
@@ -385,7 +386,7 @@ This will fail because the expected text was not found.  Let's add it to the vie
 </div>
 ```
 
-And the completed? helper in app/helpers/items_helper.rb:
+Add the `completed?` helper in app/helpers/items_helper.rb:
 
 ```ruby
 module ItemsHelper
@@ -559,7 +560,7 @@ And in app/views/items/index.html.erb:
   </div>
 ```
 
-You probably know why this is going to fail:  We haven't defined the approprite route.  Let's do that:
+You probably know why this is going to fail:  We haven't defined the appropriate route.  Let's do that:
 
 ```ruby
   resources :items do
@@ -590,9 +591,9 @@ And again, you know why the spec is going to fail: No action for mark_completed.
   end
 ```
 
-You'll notice that this spec creates test doubles and stubs all of the action on the item model.  The idea behind this is that your controller spec should only test what is happening in the controller.  In your controller, stub what you expect the Item model to do, and in the spec on the Item model, you can make sure that what you stubbed in the controller is what is actually happening.
+You'll notice that this spec creates test doubles and stubs all of the action on the `item` model.  The idea behind this is that your controller spec should only test what is happening in the controller.  In your controller, stub what you expect the `Item` model to do, and in the spec on the `Item` model, you can make sure that what you stubbed in the controller is what is actually happening.
 
-You may be wondering, if that's true, why haven't we written any model specs on Item yet??  The answer is that there's no reason to; everything we're doing in Item is straight out of ActiveRecord, which is very well-tested.  If, at a later point, we decide to add something to the Item model, like validations or callbacks, those will need to be tested.
+You may be wondering, if that's true, why haven't we written any model specs on Item yet?  The answer is that there's no reason to; everything we're doing in Item is straight out of ActiveRecord, which is very well-tested.  If, at a later point, we decide to add something to the Item model, like validations or callbacks, those will need to be tested.
 
 Let's write an action in app/controllers/items_controller.rb to make the controller spec pass:
 
@@ -636,8 +637,8 @@ And make the view match the step:
 </div>
 ```
 
-With that, you've completed your feature.  The only remaining pending spec is the model; if you are done with the model, you can go ahead and remove the pending from that model and have a passing set of specs.  But you're probably not done.  You might want to be able to uncomplete completed items.  You might want to delete items from the list.  You might want to have a user authentication system and allow each user to have a separate list.  You can build anything you'd normally build into a web application using this style. 
+With that, you've completed your feature.  The only remaining pending spec is the model. If you are done with the model, you can go ahead and remove the pending from that model and have a passing set of specs.  But you're probably not done.  You might want to be able to uncomplete completed items.  You might want to delete items from the list.  You might want to have a user authentication system and allow each user to have a separate list.  You can build anything you'd normally build into a web application using this style. 
 
-Note that the application is completely unstyled; I haven't even told you to look at it in a web browser.  When you do so, you'll probably be horrified at what it looks like, but it works exactly like you expect it to!  Since you have good test coverage, you can start rearranging things on the page, adding CSS, and tweaking things without worrying too much about breaking things; if your specs start to fail, you can adapt your code and your tests to match the new desired behavior.
+Note that the application is completely unstyled; I haven't even told you to look at it in a web browser.  When you do so, you'll probably be horrified at what it looks like, but it works exactly like you expect it to!  Since you have good test coverage, you can start rearranging things on the page, adding CSS, and tweaking items without worrying too much about breaking things. If your specs start to fail, you can adapt your code and your tests to match the new desired behavior.
 
 Stay tuned for part 3, which describes how to share step definitions among different features, a few best practices, and some comparison to other options!
