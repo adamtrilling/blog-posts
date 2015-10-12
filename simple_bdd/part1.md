@@ -1,26 +1,28 @@
 # Feature Driven Development
 
-In an ideal world, everyone who makes Rails apps would do test-driven development, but many do not do so due to the complexity of setup, the additional time it takes to write tests, and general laziness. I believe that by providing simple, powerful tools and techniques, and the guidance in using them, at least the first two factors can be eliminated, and general laziness will become reason TO write tests rather than a reason NOT TO write tests. The technique is Feature Driven Development, the tools are SimpleBDD and RSpec, and the guidence is this series of blog posts.
+In an ideal world, everyone who makes Rails apps would do test-driven development. However, many do not because of the complexity of setup, the additional time it takes to write tests, and general laziness. I believe that by providing simple, powerful tools and techniques, and the guidance in using them, at least the first two factors can be eliminated. Then general laziness will become reason TO write tests rather than a reason NOT TO.
+
+The technique is Feature Driven Development, the tools are SimpleBDD and RSpec, and the guidance is this series of three blog posts.
 
 ## The Stack
-- RSpec, a very widely-used testing framework for Ruby.  (http://rspec.info/)
-- Simple BDD, a small frameowrk that greatly simplifies writing feature specs, which are the linchpin of BDD. (https://github.com/robb1e/simple_bdd)
+- RSpec, a very widely used testing framework for Ruby.  (http://rspec.info/)
+- Simple BDD, a small framework that greatly simplifies writing feature specs, which are the linchpin of BDD. (https://github.com/robb1e/simple_bdd)
 - Capybara, a web driver that lets your feature specs act as if they were in a browser. (http://jnicklas.github.io/capybara/)
-- FactoryGirl, a replacement for fixtures that makes it easy to create dynamic data for your tests (https://github.com/thoughtbot/factory_girl)
+- FactoryGirl, a replacement for fixtures that makes it easy to create dynamic data for your tests. (https://github.com/thoughtbot/factory_girl)
 
 ## The Process Of Developing A Feature
 
 1. Describe your feature in terms of steps.  SimpleBDD allows you to do this in a language closely resembling plain English.
 2. Implement the first pending step definition.
-3. Run the feature spec.  It will fail, and the error message will tell you what you need to do to make it pass; if a route is missing, write the route.  If a controller or model is missing, write the controller or model (and any associated unit tests).  If there's a missing view, write it.  If there's a bug in your code, fix it.
+3. Run the feature spec.  It will fail, and the error message will tell you what you need to do to make it pass. For example, if a route is missing, write the route.  If a controller or model is missing, write the controller or model (and any associated unit tests).  If there's a missing view, write it.  If there's a bug in your code, fix it.
 4. Repeat steps 2 and 3 until your feature spec is passing.  When your feature spec is passing, your feature is complete.
 
-The beauty of this process is twofold.  First, it avoids the coders block that many developers face when starting on a large feature.  Instead of having to worry about all of the implementation details of your feature before you write any code, you can write the feature steps and worry about the details as you get to them.  Second, as you're working on your feature, RSpec is always telling you what you need to do next.
+The beauty of this process is twofold.  First, it avoids the coder's block that many developers face when starting on a large feature.  Instead of having to worry about all of the implementation details of your feature before you write any code, you can write the feature steps and worry about the details as you get to them.  Second, as you're working on your feature, RSpec is always telling you what you need to do next.
 
 ## Anatomy Of A Feature Spec
-A feature spec defines one feature, which is a subset of the functionality of your application. Each feature has one or more scenarios; a scenario might describe a single aspect of the feature, or a path through the feature. Each scenario is composed of one more more steps, which describe the user story for the scenario. Each step begins with one of the following words: Given, When, Then, And, But and is followed by a string explaining the step in human-understandable language.  The string part of the step is converted into a method name, and that method definition will describe how the step should proceed.
+A feature spec defines one feature, which is a subset of the functionality of your application. Each feature has one or more scenarios. A scenario might describe a single aspect of the feature, or a path through the feature. Each scenario is composed of one more more steps, which describe the user story for the scenario. Each step begins with one of the following words: Given, When, Then, And, But and is followed by a string explaining the step in human-understandable language.  The string part of the step is converted into a method name, and that method definition will describe how the step should proceed.
 
-What follows is a part-by-part description of part of the feature spec the sample code (spec/features/todo_list_spec.rb).  In the next part of this series, we will examine the entire spec and use it to build out the feature.
+What follows is a part-by-part description of the sample code (spec/features/todo_list_spec.rb).  In the next part of this series, we will examine the entire spec and use it to build out the feature.
 
 ```ruby
 require 'rails_helper'
