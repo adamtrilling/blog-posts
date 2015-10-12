@@ -1,14 +1,15 @@
 # Getting the most out of SimpleBDD
 
-In this final post, we will explore the differences between SimpleBDD and its primary competitor, Cucumber, and explore some tricks you can do to get the most out of SimpleBDD.
+In [part one](https://github.com/adamtrilling/blog-posts/blob/master/simple_bdd/part1.md) of our series of Feature Driven Development, we provided an overview of what it is. In [part two](https://github.com/adamtrilling/blog-posts/blob/master/simple_bdd/part2.md), we developed a simple app. Now, in part three, we will look at the differences between SimpleBDD and its primary competitor, Cucumber, and explore some tricks you can do to get the most out of SimpleBDD.
 
 ## Why SimpleBDD instead of Cucumber?
-Cucumber is the tool most people think of when mentioning Behavior-Driven Development, with good reason, and BDD using Cucumber follows the same process as BDD using SimpleBDD.  There are three main differences between SimpleBDD and Cucumber:
-- In Cucumber, step definitions are matched to steps using regular expressions. In SimpleBDD, step definitions are translated into method names.
-- In Cucumber, step definitions are global.  In SimpleBDD, step definitions are called within the class context of the scenario that calls them.
-- Cucumber is separate from RSpec, and your features and step definitions live outside the spec/ directory in your application.  SimpleBDD lives alongside RSpec, putting its files in spec/features, and the feature tests are run by default when you run RSpec.
+Cucumber is the tool most people think of when mentioning Behavior-Driven Development, and BDD using Cucumber follows the same process as BDD using SimpleBDD, but there are three main differences between the two tools.
 
-The upshot of the design differences is that SimpleBDD encourages you to isolate each feature its step definitions, whereas Cucumber encourages you to share.  In small projects, Cucumber can be simpler, but in larger projects, step definitions tend to be spread across many files, making it difficult to figure out what you have already defined.  While both Cucumber and SimpleBDD can use instance variables to share context across step definitions, SimpleBDD can also use `let`-defined variables.  Large Cucumber projects tend to cause confusion about which instance variables are defined and what they mean.  Since SimpleBDD runs scenarios in their own class context and makes you take specific measures to share steps across features, it's easier to keep track of these shared steps and what variables they define.  
+1. In Cucumber, step definitions are matched to steps using regular expressions. In SimpleBDD, step definitions are translated into method names.
+1. In Cucumber, step definitions are global.  In SimpleBDD, step definitions are called within the class context of the scenario that calls them.
+1. Cucumber is separate from RSpec, and your features and step definitions live outside the spec/ directory in your application.  SimpleBDD lives alongside RSpec, putting its files in spec/features, and the feature tests are run by default when you run RSpec.
+
+The upshot of the design differences is that SimpleBDD encourages you to isolate each feature in its step definitions, whereas Cucumber encourages you to share.  In small projects, Cucumber can be simpler, but in larger projects, step definitions tend to be spread across many files, making it difficult to figure out what you have already defined.  While both Cucumber and SimpleBDD can use instance variables to share context across step definitions, SimpleBDD can also use `let`-defined variables.  Large Cucumber projects tend to cause confusion about which instance variables are defined and what they mean.  Since SimpleBDD runs scenarios in their own class context and makes you take specific measures to share steps across features, it's easier to keep track of these shared steps and what variables they define.  
 
 ## Sharing step definitions
 
@@ -89,7 +90,7 @@ end
 end
 ```
 
-Again taking advantage of the class scope of each feature and scenario, you could override respond_to? and  method_missing to do regular expression matching on step definitions:
+Again taking advantage of the class scope of each feature and scenario, you could override `respond_to?` and  `method_missing` to do regular expression matching on step definitions:
 
 ```ruby
 def self.respond_to?(method_sym, include_private = false)
@@ -115,8 +116,8 @@ I don't recommend going this route, as it can get very complex very quickly, but
 
 When your feature specs are failing and you don't know why, there are two tools that can be very helpful, both of which should be added to your Gemfile:
 
-1) pry.  This very widely used ruby debugger will open up a shell whenever it encounters the line 'binding.pry' in your code.  This works equally well in feature specs, unit tests, and implementation code.
-2) launchy.  This gem is specific to feature specs.  In a step definition, you can say 'save_and_open_page' and the page, as currently rendered by capybara-webkit, will be opened in a new tab in your web browser.  This page will be completely unstyled, but it can be inspected to see if you are on the wrong page, if a form field or DOM element isn't named quite like you thought it was, or many of the other common errors that come up in feature specs.
+1. pry.  This very widely used ruby debugger will open up a shell whenever it encounters the line 'binding.pry' in your code.  This works equally well in feature specs, unit tests, and implementation code.
+2. launchy.  This gem is specific to feature specs.  In a step definition, you can say 'save_and_open_page' and the page, as currently rendered by capybara-webkit, will be opened in a new tab in your web browser.  This page will be completely unstyled, but it can be inspected to see if you are on the wrong page, if a form field or DOM element isn't named quite like you thought it was, or many of the other common errors that come up in feature specs.
 
 If you are using these tools, it can be helpful to create a step module like this in support/steps/debugging.rb:
 
@@ -167,8 +168,8 @@ The default web driver that capybara uses is called RackTest.  It can do basic w
 
 ### capybara-webkit
 
-capybara-webkit is a driver that uses the WebKit framework (also used by Safari and Chrome) to render your page and execute capybara commands.  It supports JavaScript to some extent.  It also runs headlessly, which means you don't need access to a graphical interface to use it.  It runs relatively quickly, and is simple to set up in continuous integration environments.  You will need to install the Qt libraries and associated development headers to use it, but that is a strightforward process on MacOS and Linux.  Its primary limitation is that it can't click on links where the link text is an icon.
+capybara-webkit is a driver that uses the WebKit framework (also used by Safari and Chrome) to render your page and execute capybara commands.  It supports JavaScript to some extent.  It also runs headlessly, which means you don't need access to a graphical interface to use it.  It runs relatively quickly, and is simple to set up in continuous integration environments.  You will need to install the Qt libraries and associated development headers to use it, but that is a straightforward process on MacOS and Linux.  Its primary limitation is that it can't click on links where the link text is an icon.
 
 ### Selenium
 
-Selenium uses a full Firefox browser to run your capybara features.  This is good and bad; since it has to load an entire browser, it is much slower than capybara-webkit and can be tricky to use in continuous integration.  However, since it is running on a full-featured browser, there are no missing features.  If your web application runs in FireFox, it is testable in Selenium.  Also, since your tests are running in an actual browser, you can watch them run.
+Selenium uses a full Firefox browser to run your capybara features.  This is good and bad; since it has to load an entire browser, it is much slower than capybara-webkit and can be tricky to use in continuous integration.  However, since it is running on a full-featured browser, there are no missing features.  If your web application runs in Firefox, it is testable in Selenium.  Also, since your tests are running in an actual browser, you can watch them run.
